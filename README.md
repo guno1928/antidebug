@@ -66,7 +66,7 @@ func main() {
 
     cfg.OnDetect = func(reason string) {
         // Called after a random delay — do not trust this timing for cleanup
-        fmt.Fprintln(os.Stderr, "tampering detected:", reason)
+        fmt.Fprintln(os.Stderr, "tampering detected:", reason) // ofc you dont have this in production as they will see this log line and know they were detected, but it's useful for testing
         os.Exit(1)
     }
 
@@ -117,7 +117,7 @@ func main() {
     cfg.LogFilePath = "antidebug.log"
 
     cfg.OnDetect = func(reason string) {
-        fmt.Fprintln(os.Stderr, "tampering detected:", reason)
+        fmt.Fprintln(os.Stderr, "tampering detected:", reason) // ofc you dont have this in production as they will see this log line and know they were detected, but it's useful for testing
         os.Exit(1)
     }
 
