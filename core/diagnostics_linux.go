@@ -38,7 +38,6 @@ func platformDiagnostics(sb *strings.Builder) {
 			for prefix := range wantFields {
 				if strings.HasPrefix(line, prefix) {
 					fmt.Fprintf(sb, "  %s\n", line)
-					// If TracerPid is non-zero, show tracer comm
 					if prefix == "TracerPid:" {
 						parts := strings.Fields(line)
 						if len(parts) >= 2 {

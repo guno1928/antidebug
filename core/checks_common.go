@@ -10,7 +10,6 @@ type checkFunc func() (reason string, detected bool)
 
 func buildFastChecks(multiplier float64) []checkFunc {
 	checks := []checkFunc{
-		checkTimingDelta(multiplier),
 		checkSleepAccuracy(),
 		checkHashTiming(multiplier),
 	}
@@ -20,67 +19,6 @@ func buildFastChecks(multiplier float64) []checkFunc {
 
 func buildSlowChecks() []checkFunc {
 	return platformSlowChecks()
-}
-
-func timingProbe() {
-	buf := [64]byte{}
-	sha256.Sum256(buf[:])
-}
-
-func checkTimingDelta(multiplier float64) checkFunc {
-	const windowSize = 20
-	const warmupSamples = 10
-	samples := make([]int64, 0, windowSize)
-	calls := 0
-
-	for i := 0; i < 3; i++ {
-		t0 := time.Now()
-		timingProbe()
-		samples = append(samples, time.Since(t0).Nanoseconds())
-	}
-
-	rollingMin := func() int64 {
-		min := samples[0]
-		for _, s := range samples[1:] {
-			if s < min {
-				min = s
-			}
-		}
-		return min
-	}
-
-	consecutiveHits := 0
-	const requiredConsecutive = 5
-
-	return func() (string, bool) {
-		t0 := time.Now()
-		timingProbe()
-		elapsed := time.Since(t0).Nanoseconds()
-		calls++
-
-		if len(samples) < windowSize {
-			samples = append(samples, elapsed)
-		} else {
-			samples[(calls-1)%windowSize] = elapsed
-		}
-
-		if calls <= warmupSamples {
-			consecutiveHits = 0
-			return "", false
-		}
-
-		threshold := int64(float64(rollingMin()) * multiplier)
-		if elapsed > threshold {
-			consecutiveHits++
-			if consecutiveHits >= requiredConsecutive {
-				consecutiveHits = 0
-				return "timing delta exceeded threshold (debugger overhead detected)", true
-			}
-		} else {
-			consecutiveHits = 0
-		}
-		return "", false
-	}
 }
 
 func checkSleepAccuracy() checkFunc {

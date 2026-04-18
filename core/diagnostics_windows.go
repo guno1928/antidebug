@@ -60,7 +60,6 @@ func platformDiagnostics(sb *strings.Builder) {
 		uintptr(unsafe.Pointer(&retLen)))
 	fmt.Fprintf(sb, "  NtQuery DebugFlags       : %d  (0 = debugged)\n", debugFlags)
 
-	// ── Sandboxie ─────────────────────────────────────────────────────────
 	sb.WriteString("--- Sandboxie ---\n")
 	sbiePtr, _ := syscall.UTF16PtrFromString("SbieDll.dll")
 	h, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(sbiePtr)))
@@ -86,8 +85,6 @@ func platformDiagnostics(sb *strings.Builder) {
 		b := (*[5]byte)(unsafe.Pointer(addr))
 		fmt.Fprintf(sb, "    %-26s : %02X %02X %02X %02X %02X\n", fn, b[0], b[1], b[2], b[3], b[4])
 	}
-
-	// ── Registry keys ─────────────────────────────────────────────────────
 	sb.WriteString("--- Registry keys (HKLM) ---\n")
 	keysToCheck := []string{
 		`SOFTWARE\Oracle\VirtualBox Guest Additions`,
@@ -102,7 +99,6 @@ func platformDiagnostics(sb *strings.Builder) {
 		fmt.Fprintf(sb, "  %-55s : %v\n", key, exists)
 	}
 
-	// ── Parent process ─────────────────────────────────────────────────────
 	sb.WriteString("--- Parent process ---\n")
 	myPID := uint32(os.Getpid())
 	snapshot, _, _ := procCreateToolhelp32Snapshot.Call(th32csSnapProcess, 0)

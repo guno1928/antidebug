@@ -36,7 +36,6 @@ const (
 	th32csSnapProcess  = 0x00000002
 )
 
-// PROCESSENTRY32W mirrors the Windows struct.
 type processEntry32W struct {
 	Size              uint32
 	CntUsage          uint32
@@ -127,7 +126,7 @@ func checkNtQueryDebugPort() checkFunc {
 func checkNtQueryDebugFlags() checkFunc {
 	return func() (string, bool) {
 		hProc, _, _ := procGetCurrentProcess.Call()
-		var debugFlags uint32 = 1 // assume not debugged
+		var debugFlags uint32 = 1
 		var returnLen uint32
 		ret, _, _ := procNtQueryInformationProcess.Call(
 			hProc,
@@ -184,7 +183,6 @@ func checkPEBBeingDebugged() checkFunc {
 		if ret != 0 || pbi.PebBaseAddress == 0 {
 			return "", false
 		}
-		// BeingDebugged is at offset 2 in the PEB.
 		beingDebugged := *(*byte)(unsafe.Pointer(pbi.PebBaseAddress + 2))
 		if beingDebugged != 0 {
 			return "PEB BeingDebugged flag is set", true
@@ -250,7 +248,6 @@ func checkHeapFlags() checkFunc {
 		if ret != 0 || pbi.PebBaseAddress == 0 {
 			return "", false
 		}
-		// ProcessHeap pointer offsets differ by bitness.
 		var processHeap uintptr
 		if unsafe.Sizeof(uintptr(0)) == 8 {
 			processHeap = *(*uintptr)(unsafe.Pointer(pbi.PebBaseAddress + 0x30))
@@ -329,7 +326,6 @@ func checkSandboxieDll() checkFunc {
 }
 
 func checkSandboxieNtdllHooks() checkFunc {
-	// Resolve ntdll.dll handle once at check creation time.
 	ntdllName, _ := syscall.UTF16PtrFromString("ntdll.dll")
 	ntdllHandle, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(ntdllName)))
 
@@ -353,7 +349,6 @@ func checkSandboxieNtdllHooks() checkFunc {
 			if addr == 0 {
 				continue
 			}
-			// Read first 12 bytes of the function prologue.
 			b := (*[12]byte)(unsafe.Pointer(addr))
 			if b[0] == 0xE9 {
 				return "Sandboxie: NTDLL!" + fn + " has JMP rel32 hook (Sandboxie trampoline)", true
@@ -494,7 +489,6 @@ func checkHardwareBreakpoints() checkFunc {
 		if aligned&0xF != 0 {
 			aligned = (aligned + 15) &^ 15
 		}
-		// Set ContextFlags at offset 48.
 		*(*uint32)(unsafe.Pointer(aligned + 48)) = contextDebugRegisters
 		hThread, _, _ := procGetCurrentThread.Call()
 		ret, _, _ := procGetThreadContext.Call(hThread, aligned)
@@ -526,7 +520,6 @@ func checkKernelDebugger() checkFunc {
 			unsafe.Sizeof(info),
 			0,
 		)
-		// ret == 0 means STATUS_SUCCESS
 		if ret == 0 && info.DebuggerEnabled != 0 && info.DebuggerNotPresent == 0 {
 			return "NtQuerySystemInformation reports kernel debugger is active", true
 		}
@@ -662,7 +655,6 @@ func checkPrivateExecutableRegions() checkFunc {
 			if ret == 0 {
 				break
 			}
-			// Only flag: committed, private (not image/mapped), executable
 			if mbi.State == memCommit && mbi.Type == memPrivate && mbi.RegionSize >= minSize {
 				p := mbi.Protect & 0xFF
 				if p == pageExec || p == pageExecR || p == pageExecRW || p == pageExecRWC {
@@ -743,8 +735,6 @@ func byteHex(b byte) string {
 	const h = "0123456789ABCDEF"
 	return string([]byte{h[b>>4], h[b&0xF]})
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 func processNameByPID(pid uint32) string {
 	snapshot, _, _ := procCreateToolhelp32Snapshot.Call(th32csSnapProcess, 0)

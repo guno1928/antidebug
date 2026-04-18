@@ -29,6 +29,7 @@ All ScyllaHide profiles were tested — every one was detected and blocked:
 | Themida | ✅ Detected |
 | Obsidian | ✅ Detected |
 | Armadillo | ✅ Detected |
+| IDA Pro | ✅ Detected |
 
 ---
 

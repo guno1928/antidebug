@@ -35,7 +35,7 @@ func checkProcStatusTracerPid() checkFunc {
 		"radare2": true, "r2": true,
 		"frida": true, "frida-server": true, "frida-gadget": true,
 		"gdbserver": true,
-		"rr":        true, // Mozilla rr record-and-replay debugger
+		"rr":        true, /
 	}
 	return func() (string, bool) {
 		f, err := os.Open("/proc/self/status")
@@ -58,7 +58,6 @@ func checkProcStatusTracerPid() checkFunc {
 			if err != nil || pid == 0 {
 				break
 			}
-			// TracerPid is non-zero — identify the tracer before flagging.
 			tracerComm := readProcessComm(pid)
 			if knownDebuggers[tracerComm] {
 				return "/proc/self/status TracerPid=" + parts[1] + " comm=" + tracerComm + " (known debugger)", true
@@ -261,7 +260,6 @@ func checkAnonymousExecutableRegions() checkFunc {
 			if len(perms) < 3 || perms[2] != 'x' {
 				continue
 			}
-			// File-backed (has a path starting with /) — legitimate
 			if len(fields) >= 6 {
 				path := fields[5]
 				if knownPseudo[path] {
@@ -271,7 +269,6 @@ func checkAnonymousExecutableRegions() checkFunc {
 					continue
 				}
 			}
-			// Anonymous executable region — injected shellcode/hook
 			return "anonymous executable memory region (injected shellcode): " + fields[0] + " perms=" + perms, true
 		}
 		return "", false

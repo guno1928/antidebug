@@ -167,10 +167,10 @@ func Start(cfg Config) {
 	if cfg.OnDetect == nil {
 		cfg.OnDetect = defaultOnDetect
 	}
-	if cfg.DeferredMinDelay <= 0 {
+	if cfg.DeferredMinDelay < 0 {
 		cfg.DeferredMinDelay = 30 * time.Second
 	}
-	if cfg.DeferredMaxDelay <= cfg.DeferredMinDelay {
+	if cfg.DeferredMaxDelay < cfg.DeferredMinDelay {
 		cfg.DeferredMaxDelay = cfg.DeferredMinDelay + 2*time.Minute
 	}
 	if cfg.LogFilePath == "" {
@@ -211,12 +211,16 @@ func runCheckLoop(cfg Config, log *debugLogger, interval time.Duration, checks [
 func flagAndDefer(reason string, cfg Config, log *debugLogger) {
 	if atomic.CompareAndSwapInt32(&compromised, 0, 1) {
 		log.write("DETECTED: " + reason)
+		delay := cfg.DeferredMinDelay
+		if cfg.DeferredMaxDelay > cfg.DeferredMinDelay {
+			window := int64(cfg.DeferredMaxDelay - cfg.DeferredMinDelay)
+			delay += time.Duration(rand.Int63n(window))
+		}
+		if delay == 0 {
+			cfg.OnDetect(reason)
+			return
+		}
 		go func() {
-			delay := cfg.DeferredMinDelay
-			if cfg.DeferredMaxDelay > cfg.DeferredMinDelay {
-				window := int64(cfg.DeferredMaxDelay - cfg.DeferredMinDelay)
-				delay += time.Duration(rand.Int63n(window))
-			}
 			time.Sleep(delay)
 			cfg.OnDetect(reason)
 		}()
