@@ -2,6 +2,8 @@
 
 A production-grade anti-debug and anti-tamper library for Go. Detects debuggers, sandboxes, instrumentation hooks, and analysis environments at runtime — on both Windows and Linux — with zero CGO and zero external dependencies.
 
+use with https://github.com/burrowers/garble for best results.
+
 ---
 
 ## Features
