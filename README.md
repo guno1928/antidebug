@@ -29,7 +29,15 @@ All ScyllaHide profiles were tested — every one was detected and blocked:
 | Themida | ✅ Detected |
 | Obsidian | ✅ Detected |
 | Armadillo | ✅ Detected |
+
+| Debugger | Result |
+|---|---|   
 | IDA Pro | ✅ Detected |
+| x64dbg | ✅ Detected |
+| Ghidra | ✅ Detected |
+
+
+everything else is most likely blocked from working i just have not tested it yet.
 
 ---
 
