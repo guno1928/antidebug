@@ -2,7 +2,7 @@
 
 A production-grade anti-debug and anti-tamper library for Go. Detects debuggers, sandboxes, instrumentation hooks, and analysis environments at runtime — on both Windows and Linux — with zero CGO and zero external dependencies.
 
-use with https://github.com/burrowers/garble for best results.
+use with https://github.com/guno1928/alosgarble for best results.
 
 ---
 
@@ -52,7 +52,7 @@ everything else is most likely blocked from working i just have not tested it ye
 ## Installation
 
 ```bash
-go get github.com/guno1928/antidebug/core
+go get github.com/guno1928/antidebug/core@latest
 ```
 
 ---
