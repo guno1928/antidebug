@@ -35,7 +35,7 @@ func checkProcStatusTracerPid() checkFunc {
 		"radare2": true, "r2": true,
 		"frida": true, "frida-server": true, "frida-gadget": true,
 		"gdbserver": true,
-		"rr":        true, /
+		"rr":        true,
 	}
 	return func() (string, bool) {
 		f, err := os.Open("/proc/self/status")
