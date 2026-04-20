@@ -4,6 +4,7 @@ package antidebug
 
 import (
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -59,11 +60,9 @@ func platformFastChecks() []checkFunc {
 		checkPEBBeingDebugged(),
 		checkPEBNtGlobalFlag(),
 		checkHeapFlags(),
-		checkOutputDebugString(),
 		checkParentProcess(),
 		checkSandboxieDll(),
 		checkSandboxieNtdllHooks(),
-		checkNtdllInlineHooks(),
 		checkHardwareBreakpoints(),
 		checkKernelDebugger(),
 		checkKUserSharedData(),
@@ -78,7 +77,6 @@ func platformSlowChecks() []checkFunc {
 	return []checkFunc{
 		checkRWXRegions(),
 		checkPrivateExecutableRegions(),
-		checkNtdllPagePrivate(),
 	}
 }
 
@@ -286,17 +284,20 @@ func checkOutputDebugString() checkFunc {
 }
 
 func checkParentProcess() checkFunc {
-	legitimateParents := map[string]bool{
-		"explorer.exe":        true,
-		"cmd.exe":             true,
-		"powershell.exe":      true,
-		"pwsh.exe":            true,
-		"conhost.exe":         true,
-		"wt.exe":              true,
-		"alacritty.exe":       true,
-		"windowsterminal.exe": true,
-		"code.exe":            true,
-		"go.exe":              true,
+	suspiciousParents := map[string]bool{
+		"x64dbg.exe": true, "x32dbg.exe": true,
+		"ollydbg.exe": true,
+		"windbg.exe":  true, "kd.exe": true, "cdb.exe": true, "ntsd.exe": true,
+		"ida.exe": true, "ida64.exe": true, "idaq.exe": true, "idaq64.exe": true,
+		"dnspy.exe":         true,
+		"processhacker.exe": true,
+		"binaryninja.exe":   true,
+		"radare2.exe":       true, "r2.exe": true,
+		"cutter.exe":           true,
+		"pestudio.exe":         true,
+		"apimonitor.exe":       true,
+		"fiddler.exe":          true,
+		"immunitydebugger.exe": true,
 	}
 	return func() (string, bool) {
 		ppid := os.Getppid()
@@ -304,8 +305,8 @@ func checkParentProcess() checkFunc {
 		if parentName == "" {
 			return "", false
 		}
-		if !legitimateParents[parentName] {
-			return "unexpected parent process: " + parentName, true
+		if suspiciousParents[strings.ToLower(parentName)] {
+			return "parent process is a known analysis tool: " + parentName, true
 		}
 		return "", false
 	}
@@ -328,6 +329,7 @@ func checkSandboxieDll() checkFunc {
 func checkSandboxieNtdllHooks() checkFunc {
 	ntdllName, _ := syscall.UTF16PtrFromString("ntdll.dll")
 	ntdllHandle, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(ntdllName)))
+	sbieDllName, _ := syscall.UTF16PtrFromString("SbieDll.dll")
 
 	hookedFns := []string{
 		"NtCreateFile", "NtOpenFile",
@@ -338,6 +340,10 @@ func checkSandboxieNtdllHooks() checkFunc {
 
 	return func() (string, bool) {
 		if ntdllHandle == 0 {
+			return "", false
+		}
+		sbieHandle, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(sbieDllName)))
+		if sbieHandle == 0 {
 			return "", false
 		}
 		for _, fn := range hookedFns {
@@ -473,13 +479,13 @@ func checkHardwareBreakpoints() checkFunc {
 	}
 	_ = context{}
 
-	const contextDebugRegisters = 0x00010010
+	const contextDebugRegisters = 0x00100010
 
 	const (
-		dr0Offset = 152
-		dr1Offset = 160
-		dr2Offset = 168
-		dr3Offset = 176
+		dr0Offset = 72
+		dr1Offset = 80
+		dr2Offset = 88
+		dr3Offset = 96
 		ctxSize   = 1232
 	)
 

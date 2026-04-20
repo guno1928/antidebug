@@ -154,12 +154,20 @@ func checkLinuxInjectedLibraries() checkFunc {
 		f.Close()
 	}
 
-	runtimeAllowed := map[string]bool{
-		"/lib/x86_64-linux-gnu/libnss_files.so.2":   true,
-		"/lib/x86_64-linux-gnu/libnss_dns.so.2":     true,
-		"/usr/lib/x86_64-linux-gnu/libnss_files.so": true,
-		"/usr/lib/x86_64-linux-gnu/libnss_dns.so":   true,
-		"/lib/x86_64-linux-gnu/libpam.so.0":         true,
+	systemLibDirs := []string{
+		"/lib/",
+		"/lib64/",
+		"/usr/lib/",
+		"/usr/lib64/",
+	}
+
+	isSystemLib := func(path string) bool {
+		for _, dir := range systemLibDirs {
+			if strings.HasPrefix(path, dir) {
+				return true
+			}
+		}
+		return false
 	}
 
 	return func() (string, bool) {
@@ -180,7 +188,7 @@ func checkLinuxInjectedLibraries() checkFunc {
 			if !(strings.HasSuffix(path, ".so") || strings.Contains(path, ".so.")) {
 				continue
 			}
-			if !baseline[path] && !runtimeAllowed[path] {
+			if !baseline[path] && !isSystemLib(path) {
 				return "unexpected shared library injected into process: " + path, true
 			}
 		}
@@ -229,9 +237,8 @@ func checkSeccomp() checkFunc {
 			if val == 1 {
 				return "/proc/self/status Seccomp=1 (SECCOMP_STRICT: process sandboxed)", true
 			}
-			if val == 2 {
-				return "/proc/self/status Seccomp=2 (SECCOMP_FILTER: BPF filter applied by sandbox)", true
-			}
+			// Seccomp=2 (SECCOMP_FILTER) is normal in Docker, Snap, Flatpak,
+			// and systemd services — do not flag it.
 			break
 		}
 		return "", false
