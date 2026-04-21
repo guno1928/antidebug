@@ -1,7 +1,7 @@
 package antidebug
 
-import "os"
+import "syscall"
 
 func defaultOnDetect(_ string) {
-	os.Exit(1)
+	syscall.Exit(1)
 }
